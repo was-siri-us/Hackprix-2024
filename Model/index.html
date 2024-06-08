@@ -1,0 +1,105 @@
+<h1>Fake Form</h1>
+
+<div>
+  <textarea name="job-description" id="job-description"></textarea>
+</div>
+
+<div>
+  <button id="sub-job-desc">Submit Job Description</button>
+</div>
+
+<div>
+  <h2 id="question">Question</h2>
+  <textarea name="answer" id="answer"></textarea>
+</div>
+
+<button id="next-question">next</button>
+
+<script>
+  function extractJSONFromText(text) {
+    var pattern = /{.*?}/;
+    var match = text.match(pattern);
+    if (match) {
+      var jsonObject = match[0];
+      return jsonObject;
+    } else {
+      return null;
+    }
+  }
+  async function fetchQuestion(input) {
+    console.log(input);
+    try {
+      const response = await fetch(
+        "https://f812-35-243-162-68.ngrok-free.app/generate_response",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(input),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error("Fetch error: ", error);
+    }
+  }
+
+  async function setJobDesc() {
+    var jobDesc = document.getElementById("job-description").value;
+    prompt = `You are an AI Interviewer, ask the user a question according to the following job description: ${jobDesc}, Restrict your replies to a single question, Grade each answer of the user on a scale of 1-10 on how accurate it is, if the user isn't able to answer properly then try asking other questions and grade it 0. All output must be in valid JSON. Output must be in valid JSON like the following example {"grade": 7, "next_question": "What frameworks have you worked on?"},{"grade": 7, "next_question": "What projects have you worked on?"}. Output must include only JSON with keys grade and next-question`;
+
+    input_message.push({ role: "system", content: prompt });
+    var input = { input_message: input_message };
+
+    var response = await fetchQuestion(input);
+    console.log(response.reply);
+
+    response = JSON.parse(extractJSONFromText(response["reply"]));
+    console.log(response)
+    question.innerHTML = response["next_question"];
+    input_message.push({
+      role: "assistant",
+      content: response["next_question"],
+    });
+  }
+
+  async function nextQuestion() {
+    console.log("next question");
+    var ans = document.getElementById("answer").value;
+    input_message.push({ role: "user", content: ans });
+    var input = { input_message: input_message };
+    console.log(input);
+
+    var response = await fetchQuestion(input);
+    response = JSON.parse(response["reply"]);
+    question.innerHTML = response["next_question"];
+    input_message.push({
+      role: "assistant",
+      content: response["next_question"],
+    });
+    console.log(response["grade"]);
+    grade += Number(response["grade"]);
+   
+  }
+
+  var submitJobDesc = document.getElementById("sub-job-desc");
+  var nextQuestionButton = document.getElementById("next-question");
+
+  var prompt = "";
+  var input_message = [];
+
+  var question = document.getElementById("question");
+  var answer = document.getElementById("answer");
+
+  var grade = 0;
+
+  nextQuestionButton.onclick = nextQuestion;
+  submitJobDesc.onclick = setJobDesc;
+</script>
