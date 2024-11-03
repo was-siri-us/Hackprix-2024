@@ -1,7 +1,7 @@
 # !pip install transformers torch accelerate
 
 
-# !huggingface-cli login --token "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"
+# !huggingface-cli login --token "<your token here>"
 
 
 from transformers import AutoTokenizer
